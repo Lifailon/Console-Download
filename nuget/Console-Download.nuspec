@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Console-Download</id>
+    <version>0.1.0</version>
+    <authors>Lifailon</authors>
+    <owners>Lifailon</owners>
+    <description>A command-line tool for downloads a file by the transmitted URL and displays the download speed in real time</description>
+    <tags>PowerShell, Module, SpeedTest, Download, Performance, iPerf, Console</tags>
+    <repository type="git" url="https://github.com/Lifailon/Console-Download" />
+    <projectUrl>https://github.com/Lifailon/Console-Download</projectUrl>
+    <licenseUrl>https://github.com/Lifailon/Console-Download/blob/rsa/LICENSE</licenseUrl>
+    <contentFiles>
+      <files include="Console-Download.psm1" buildAction="Content" />
+      <files include="Console-Download.psd1" buildAction="Content" />
+      <files include="README.md" buildAction="Content" />
+      <files include="LICENSE" buildAction="Content" />
+    </contentFiles>
+  </metadata>
+</package>
