@@ -1,3 +1,3 @@
-# downPerf
+# Console-Download
 
-Download Performance - command line tool to load the file on url, which displays the real-time download speed and a summary report of the average download speed.
+A command-line tool that performs a single task - downloads a file by the transmitted URL and displays the download speed in real time. Upon completion (or interruption) of the download, displays metrics for the duration of its operation: duration, maximum, average and minimum download speed.
