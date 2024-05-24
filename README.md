@@ -21,9 +21,9 @@ Invoke-Download -Url "https://releases.ubuntu.com/18.04/ubuntu-18.04.6-live-serv
 At the end of the download, you will be able to see the summary information:
 
 ```PowerShell
-Size    : 2627 MByte
-Time    : 0:01:47
-Minimum : 0,5
-Average : 25,1
-Maximum : 31,5
+Size    : 969 MByte
+Time    : 00:00:27
+Minimum : 0,10 MByte/sec
+Average : 34,48 MByte/sec
+Maximum : 57,50 MByte/sec
 ```
