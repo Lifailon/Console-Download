@@ -1,6 +1,20 @@
 function Invoke-Download {
+    <#
+    .SYNOPSIS
+    En:
+    A command-line tool for downloads a file by the transmitted URL and displays the download speed in real time.
+    Ru:
+    Инструмент командной строки для загрузки файла по переданному URL адресу и отображение скорости загрузки в режиме реального времени.
+    .DESCRIPTION
+    Example:
+    Invoke-Download -Url "https://releases.ubuntu.com/18.04/ubuntu-18.04.6-live-server-amd64.iso" -Path "C:\Users\Lifailon\Downloads" -FileName "us-18.04.6.iso" -Update 1
+    Invoke-Download -Url "https://releases.ubuntu.com/24.04/ubuntu-24.04-desktop-amd64.iso"
+    Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.msi"
+    .LINK
+    https://github.com/Lifailon/Console-Download
+    #>
     param (
-        [string]$Url = "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.msi",
+        [Parameter(Mandatory = $True)][string]$Url,
         [string]$Path = "$home\Downloads\",
         [string]$FileName,
         [int]$Update = 2
@@ -68,21 +82,17 @@ function Invoke-Download {
         # Зафиксировать время по завершению
         $endTime = Get-Date
         # Получаем метрики
-        [datetime]$runTime = $($endTime - $startTime).ToString('hh\:mm\:ss')
+        [string]$runTime = $($endTime - $startTime).ToString('hh\:mm\:ss')
         $metrics = $metrics -replace ",","."
         $measure = $metrics | Measure-Object -Average -Maximum -Minimum
         $Collections = New-Object System.Collections.Generic.List[System.Object]
         $Collections.Add([PSCustomObject]@{
             Size    = "$fullSize MByte"
             Time    = $runTime
-            Minimum = $measure.Minimum
-            Average = $measure.Average
-            Maximum = $measure.Maximum
+            Minimum = "$($measure.Minimum.ToString("0.00")) MByte/sec"
+            Average = "$($measure.Average.ToString("0.00")) MByte/sec"
+            Maximum = "$($measure.Maximum.ToString("0.00")) MByte/sec"
         })
         $Collections
     }
 }
-
-# Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.msi"
-# Invoke-Download -Url "https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso"
-# Invoke-Download -Url "https://releases.ubuntu.com/24.04/ubuntu-24.04-desktop-amd64.iso"
