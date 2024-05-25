@@ -8,7 +8,7 @@
     PowerShellVersion = "7.2"
     PrivateData       = @{
         PSData = @{
-            Tags         = @("SpeedTest","Download","Performance")
+            Tags         = @("Download","Downloaded","SpeedTest","Looking-Glass","Looking-House","iPerf","Performance","Metrics")
             ProjectUri   = "https://github.com/Lifailon/Console-Download"
             LicenseUri   = "https://github.com/Lifailon/Console-Download/blob/rsa/LICENSE"
         }
