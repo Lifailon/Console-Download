@@ -6,9 +6,7 @@
 <a href="https://github.com/Lifailon/Console-Download/blob/rsa/LICENSE"><img title="License"src="https://img.shields.io/github/license/Lifailon/Console-Download?link=https%3A%2F%2Fgithub.com%2FLifailon%2FConsole-Download%2Fblob%2Frsa%2FLICENSE"></a>
 </p>
 
-A command-line tool that performs a single task - downloads a file by the transmitted URL and displays the download speed in real time. Upon completion (or interruption) of the download, displays metrics for the duration of its operation: duration, maximum, average and minimum download speed.
-
-This tool is designed primarily to test the bandwidth of the network interface in order to debug the sensors of the monitoring system.
+A command-line tool that performs a single task - downloads a file by the transmitted URL and displays the download speed in real time. Upon completion (or interruption) of the download, displays metrics for the duration of its operation: duration, maximum, average and minimum download speed. This tool can also be used to check the bandwidth of the network interface through the [Looking Glass hosts](#-looking-glass-integration) in order to debug the sensors of the monitoring system.
 
 ![Image alt](https://github.com/Lifailon/Console-Download/blob/rsa/image/example.gif)
 
@@ -89,7 +87,7 @@ You can filter the resulting list by region:
 $usaNy = $urls | Where-Object region -like *USA*NY*
 ```
 
-Sample Host List for USA NY Region:
+Sample hosts list for USA NY Region:
 
 ```PowerShell
 $usaNy | Format-List
