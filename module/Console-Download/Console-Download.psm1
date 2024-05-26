@@ -1,96 +1,139 @@
 function Invoke-Download {
     <#
     .SYNOPSIS
-    A command-line tool for downloads a file by the transmitted URL and displays the download speed in real time.
+    A command line tool for downloading files from a passed URL list in multithreaded mode and displays the download speed in real time.
     .DESCRIPTION
     Example:
-    Invoke-Download -Url "https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso" -Path "C:\Users\Lifailon\Downloads" -FileName "us-24.04.iso" -Update 2
-    Invoke-Download -Url "https://github.com/Lifailon/helperd/releases/download/0.0.1/Helper-Desktop-Setup-0.0.1.exe"
-    Invoke-Download -Url "https://104-234-233-47.lg.looking.house/1000.mb"
+    Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip"
+    $urls = @(
+        "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip",
+        "https://github.com/Lifailon/helperd/releases/download/0.0.1/Helper-Desktop-Setup-0.0.1.exe"
+    )
+    Invoke-Download $urls
     .LINK
     https://github.com/Lifailon/Console-Download
     #>
     param (
-        [Parameter(Mandatory = $True)][string]$Url,
-        [string]$Path = "$home\Downloads\",
-        [string]$FileName,
-        [int]$Update = 1
+        [Parameter(Mandatory = $True)][array]$Url,
+        [ValidateRange(1,20)][int]$Thread = 1,
+        [string]$Path = "$home\Downloads"
     )
     try {
-        # Если имя файла не было передано, забираем его из url
-        if ($FileName.Length -eq 0) {
-            $FileName = Split-Path -Path $url -Leaf
-            # Удаляем параметры из названия url (если есть)
-            $FileName = $FileName -replace "&.+|\?.+"
-        }
-        $FullPath = "$Path\$FileName"
-        # Проверяем, что файл не существует
-        if (Test-Path $FullPath) {
-            Remove-Item $FullPath -Force
-        }
-        # Получить размер файла из заголовка в МБ (100%)
-        $fullSize = $($($(Invoke-WebRequest -Uri $url -Method Head).Headers["Content-Length"])/1mb).ToString(0)
-        # Зафиксировать текущее время
         $startTime = Get-Date
-        # Начать загрузку файла
-        Start-Job {
-            Invoke-WebRequest $using:Url -OutFile $using:FullPath
-        } | Out-Null
-        # Дожидаемся создания файла
-        while ($(Test-Path $FullPath) -eq $false) {
-            Start-Sleep -Milliseconds 100
+        # Обрабатываем количество потоков
+        if ($($Thread -ne 1) -and $($($Url.Count) -gt 1)) {
+            Write-Warning "NOT"
+            break
         }
-        # Массив для заполнения метриками скорости загрузки 
-        $metrics = @()
-        while ($true) {
-            # Узнать текущий размер файла в МБ
-            $currentSize = $($(Get-ChildItem $FullPath).Length/1mb).ToString(0)
-            # Получить текущую скорость загрузки и отдачи на интерфейсе через WMI
-            $interface = Get-CimInstance -ClassName Win32_PerfFormattedData_Tcpip_NetworkInterface | Select-Object Name,
-                @{name="Received";expression={$($_.BytesReceivedPersec/1mb).ToString("0.0")}},
-                @{name="Sent";expression={$($_.BytesSentPersec/1mb).ToString("0.0")}}
-            # Добавляем скорость загрузки в массив
-            $metrics += $interface.Received
-            # Получаем текущий процент загрузки
-            $downProc = $($($currentSize / $fullSize) * 100).ToString(0)
-            if ($downProc -eq 0) {
-                $downProc = 1
-            }
-            # Выводим прогресс
-            Write-Progress -Activity "$($interface.Received) MByte/sec ($currentSize of $fullSize MByte)" -PercentComplete $downProc
-            if ($downProc -eq 100) {
-                # Дожидаемся успешного завершения потока
-                while ($($(Get-Job).State) -ne "Completed") {
-                    Start-Sleep -Milliseconds 100
+        if ($Thread -eq 1) {
+            $Thread = $Url.Count
+        }
+        # Очищаем файл для фиксации статуса выполнения заданий
+        $statusTempFile = "$env:TEMP\console-download.temp"
+        $null > $statusTempFile
+        # Фиксируем статус всех задач для загрузки
+        $(0..$($($Url.Count)-1)) | ForEach-Object {$false >> $statusTempFile}
+        # Основной цикл (передаем +1 поток для фиксации скорости загрузки)
+        $metrics = $(0..$($Url.Count)) | ForEach-Object -Parallel {
+            try {
+                if ($_ -eq 0) {
+                    while ($true) {
+                        # Получить текущую скорость загрузки на сетевом интерфейсе через WMI
+                        $interface = Get-CimInstance -ClassName Win32_PerfFormattedData_Tcpip_NetworkInterface
+                        # Получаем процент для прогресс бара измерения скорости
+                        [int]$percent = $($interface.BytesReceivedPersec/1mb).ToString("0")
+                        if ($percent -eq 0) {
+                            $percent = 1
+                        }
+                        elseif ($percent -gt 100) {
+                            $percent = 100
+                        }
+                        # Выводм прогресс скорости загрузки
+                        Write-Progress -Activity "$([string]$interface.Name)" -Status "$($($interface.BytesReceivedPersec/1mb).ToString("0.0")) MByte/sec" -PercentComplete $percent -Id 0
+                        # Проверяем статус завершения всех задач
+                        [array]$status = Get-Content $using:statusTempFile
+                        if ($status -notcontains $false) {
+                            break
+                        }
+                        # Выводим текущую скорость загрузки для фиксации в массив основого цикла
+                        $($interface.BytesReceivedPersec/1mb).ToString("0.0")
+                        Start-Sleep $using:update
+                    }
                 }
-                # Освобождаем процесс
-                Get-Job | Remove-Job -Force
-                break
+                else {
+                    # Удаляем первое задание потока из индекса для обращения к массиву
+                    $Index       = $_-1
+                    # Назначаем порядковый номер для положения прогресс бара
+                    $progressId  = $_+1
+                    $UrlArray    = $using:Url
+                    # Забираем url из основного массива
+                    $currentUrl  = $UrlArray[$Index]
+                    # Забираем имя файла из url
+                    $FileName    = Split-Path -Path $currentUrl -Leaf
+                    # Удаляем параметры из названия url (если есть)
+                    $FileName    = $FileName -replace "&.+|\?.+"
+                    $PathDown    = $using:Path
+                    $fullPath    = "$PathDown\$FileName"
+                    # Проверяем, что файл не существует (удаляем)
+                    if (Test-Path $fullPath) {
+                        Remove-Item $fullPath -Force
+                    }
+                    # Получить размер файла из заголовка в МБ (100%)
+                    $fullSize = $($($(Invoke-WebRequest -Uri $currentUrl -Method Head).Headers["Content-Length"])/1mb).ToString(0)
+                    # Начать загрузку файла в фоновом потоке
+                    Start-Job {
+                        param (
+                            $currentUrl,
+                            $fullPath
+                        )
+                        Invoke-WebRequest $currentUrl -OutFile $fullPath
+                    } -ArgumentList @($currentUrl,$fullPath) | Out-Null
+                    # Дожидаемся создания файла
+                    while ($(Test-Path $fullPath) -eq $false) {
+                        Start-Sleep -Milliseconds 100
+                    }
+                    while ($true) {
+                        # Узнать текущий размер файла в МБ
+                        $currentSize = $($(Get-ChildItem $fullPath).Length/1mb).ToString(0)
+                        # Высчитываем текущий процент загрузки
+                        $downProc = $($($currentSize / $fullSize) * 100).ToString(0)
+                        if ($downProc -eq 0) {
+                            $downProc = 1
+                        }
+                        # Выводим прогресс загрузки
+                        Write-Progress -Activity "$FileName" -PercentComplete $downProc -Status "$downProc % ($currentSize of $fullSize MByte)" -Id $progressId
+                        if ($downProc -eq 100) {
+                            # Дожидаемся успешного завершения потока
+                            while ($($(Get-Job).State) -ne "Completed") {
+                                Start-Sleep -Milliseconds 100
+                            }
+                            # Освобождаем потоки
+                            Get-Job | Remove-Job -Force
+                            # Фиксируем статус завершения работы по индексу в массив файла
+                            $statusTempFile = $using:statusTempFile
+                            [array]$status = Get-Content $statusTempFile
+                            $status[$Index] = $true
+                            $status > $statusTempFile
+                            break
+                        }
+                        Start-Sleep $using:update
+                    }
+                }
             }
-            # Пауза между проверками
-            Start-Sleep $Update
-        }
-    }
-    # Обрабатываем прерывание работы
-    catch {
-        # Завершаем процесс
-        Get-Job | Stop-Job
-        Get-Job | Remove-Job -Force
+            catch {
+                Get-Job | Stop-Job
+                Get-Job | Remove-Job -Force
+            }
+        } -ThrottleLimit $($url.Count+1)
     }
     finally {
-        # Зафиксировать время по завершению
         $endTime = Get-Date
-        # Получаем метрики
         [string]$runTime = $($endTime - $startTime).ToString('hh\:mm\:ss')
         $metrics = $metrics -replace ",","."
         $measure = $metrics | Measure-Object -Average -Maximum -Minimum
         $Collections = New-Object System.Collections.Generic.List[System.Object]
         $Collections.Add([PSCustomObject]@{
-            Url       = $Url
-            FileName  = $FileName
-            FilePath  = $FullPath
-            FullSize  = "$fullSize MByte"
-            DownSize  = "$currentSize MByte"
+            Thread    = $Thread
             Time      = $runTime
             Minimum   = "$($measure.Minimum.ToString("0.00")) MByte/sec"
             Average   = "$($measure.Average.ToString("0.00")) MByte/sec"
