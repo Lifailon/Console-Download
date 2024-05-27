@@ -10,7 +10,7 @@ A command line tool for downloading files from a passed URL list in multithreade
 
 This tool is suitable for testing the network interface throughput via [Looking Glass hosts](#- Looking Glass-integration) in order to debug monitoring system sensors or check Internet speed. Once all files have been downloaded, the maximum, average and minimum download speeds during operation are displayed.
 
-![Image alt](https://github.com/Lifailon/Console-Download/blob/rsa/image/example.gif)
+![Image alt](https://github.com/Lifailon/Console-Download/blob/rsa/image/multithread.gif)
 
 ## 🚀 Install
 
