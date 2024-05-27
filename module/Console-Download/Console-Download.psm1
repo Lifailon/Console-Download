@@ -31,7 +31,7 @@ function Invoke-Download {
     )
     try {
         $startTime = Get-Date
-        $update = 1
+        $update = 2
         $multithread = $false
         # Обрабатываем количество потоков
         if ($($Thread -ne 1) -and $($($Url.Count) -gt 1)) {
@@ -118,7 +118,21 @@ function Invoke-Download {
                             $currentUrl,
                             $fullPath
                         )
-                        Invoke-WebRequest $currentUrl -OutFile $fullPath
+                        # Invoke-WebRequest $currentUrl -OutFile $fullPath
+                        $httpClient = [System.Net.Http.HttpClient]::new()
+                        $response = $httpClient.GetAsync($currentUrl, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).Result
+                        $stream = $response.Content.ReadAsStreamAsync().Result
+                        $fileStream = [System.IO.File]::OpenWrite($fullPath)
+                        try {
+                            $buffer = New-Object byte[] 81920
+                            while (($bytesRead = $stream.Read($buffer, 0, $buffer.Length)) -ne 0) {
+                                $fileStream.Write($buffer, 0, $bytesRead)
+                            }
+                        }
+                        finally {
+                            $stream.Dispose()
+                            $fileStream.Dispose()
+                        }
                     } -ArgumentList @($currentUrl,$fullPath) | Out-Null
                     # Дожидаемся создания файла
                     while ($(Test-Path $fullPath) -eq $false) {
