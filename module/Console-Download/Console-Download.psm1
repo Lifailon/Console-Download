@@ -5,6 +5,7 @@ function Invoke-Download {
     .DESCRIPTION
     Example:
     Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip"
+    Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip" -Thread 5
     $urls = @(
         "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip",
         "https://github.com/Lifailon/helperd/releases/download/0.0.1/Helper-Desktop-Setup-0.0.1.exe"
@@ -20,12 +21,19 @@ function Invoke-Download {
     )
     try {
         $startTime = Get-Date
+        $update = 1
+        $report = $true
+        $multithread = $false
         # Обрабатываем количество потоков
         if ($($Thread -ne 1) -and $($($Url.Count) -gt 1)) {
             Write-Warning "NOT"
+            $report = $false
             break
         }
-        if ($Thread -eq 1) {
+        if ($($Thread -gt 1) -and $($($Url.Count) -eq 1)) {
+            $multithread = $true
+        }
+        elseif ($($Thread -eq 1) -and $($($Url.Count) -gt 1)) {
             $Thread = $Url.Count
         }
         # Очищаем файл для фиксации статуса выполнения заданий
@@ -33,8 +41,17 @@ function Invoke-Download {
         $null > $statusTempFile
         # Фиксируем статус всех задач для загрузки
         $(0..$($($Url.Count)-1)) | ForEach-Object {$false >> $statusTempFile}
-        # Основной цикл (передаем +1 поток для фиксации скорости загрузки)
-        $metrics = $(0..$($Url.Count)) | ForEach-Object -Parallel {
+        # Передаем +1 поток для фиксации скорости загрузки
+        $arrayThread = @($(0..$($Url.Count)))
+        # Задаем лимит для количества одновременно выполняемых потоков
+        $ThrottleLimit = $($url.Count+1)
+        # Если передаем один url и несколько потоков
+        if ($multithread) {
+            $arrayThread = @(0..$Thread)
+            $ThrottleLimit = $($Thread+1)
+        }
+        # Основной цикл
+        $metrics = $arrayThread | ForEach-Object -Parallel {
             try {
                 if ($_ -eq 0) {
                     while ($true) {
@@ -66,10 +83,17 @@ function Invoke-Download {
                     # Назначаем порядковый номер для положения прогресс бара
                     $progressId  = $_+1
                     $UrlArray    = $using:Url
-                    # Забираем url из основного массива
-                    $currentUrl  = $UrlArray[$Index]
-                    # Забираем имя файла из url
-                    $FileName    = Split-Path -Path $currentUrl -Leaf
+                    # Добавляем цифру к названию файла в многопоточном режиме
+                    if ($using:multithread) {
+                        $currentUrl  = $UrlArray[0]
+                        $format      = $($(Split-Path -Path $currentUrl -Leaf) -split "\.")[-1]
+                        $FileName    = $(Split-Path -Path $currentUrl -Leaf) -replace "\.$format$","-$_.$format"
+                    } else {
+                        # Забираем url из основного массива
+                        $currentUrl  = $UrlArray[$Index]
+                        # Забираем имя файла из url
+                        $FileName    = Split-Path -Path $currentUrl -Leaf
+                    }
                     # Удаляем параметры из названия url (если есть)
                     $FileName    = $FileName -replace "&.+|\?.+"
                     $PathDown    = $using:Path
@@ -124,22 +148,24 @@ function Invoke-Download {
                 Get-Job | Stop-Job
                 Get-Job | Remove-Job -Force
             }
-        } -ThrottleLimit $($url.Count+1)
+        } -ThrottleLimit $ThrottleLimit
     }
     finally {
-        $endTime = Get-Date
-        [string]$runTime = $($endTime - $startTime).ToString('hh\:mm\:ss')
-        $metrics = $metrics -replace ",","."
-        $measure = $metrics | Measure-Object -Average -Maximum -Minimum
-        $Collections = New-Object System.Collections.Generic.List[System.Object]
-        $Collections.Add([PSCustomObject]@{
-            Thread    = $Thread
-            Time      = $runTime
-            Minimum   = "$($measure.Minimum.ToString("0.00")) MByte/sec"
-            Average   = "$($measure.Average.ToString("0.00")) MByte/sec"
-            Maximum   = "$($measure.Maximum.ToString("0.00")) MByte/sec"
-        })
-        $Collections
+        if ($report) {
+            $endTime = Get-Date
+            [string]$runTime = $($endTime - $startTime).ToString('hh\:mm\:ss')
+            $metrics = $metrics -replace ",","."
+            $measure = $metrics | Measure-Object -Average -Maximum -Minimum
+            $Collections = New-Object System.Collections.Generic.List[System.Object]
+            $Collections.Add([PSCustomObject]@{
+                Thread    = $Thread
+                Time      = $runTime
+                Minimum   = "$($measure.Minimum.ToString("0.00")) MByte/sec"
+                Average   = "$($measure.Average.ToString("0.00")) MByte/sec"
+                Maximum   = "$($measure.Maximum.ToString("0.00")) MByte/sec"
+            })
+            $Collections
+        }
     }
 }
 
