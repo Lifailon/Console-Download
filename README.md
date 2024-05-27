@@ -6,7 +6,9 @@
 <a href="https://github.com/Lifailon/Console-Download/blob/rsa/LICENSE"><img title="License"src="https://img.shields.io/github/license/Lifailon/Console-Download?link=https%3A%2F%2Fgithub.com%2FLifailon%2FConsole-Download%2Fblob%2Frsa%2FLICENSE"></a>
 </p>
 
-A command-line tool that performs a single task - downloads a file by the transmitted URL and displays the download speed in real time. Upon completion (or interruption) of the download, displays metrics for the duration of its operation: duration, maximum, average and minimum download speed. This tool can also be used to check the bandwidth of the network interface through the [Looking Glass hosts](#-looking-glass-integration) in order to debug the sensors of the monitoring system.
+A command line tool for downloading files from a passed URL list in multithreaded mode and displays the download speed in real time.
+
+This tool is suitable for testing the network interface throughput via [Looking Glass hosts](#- Looking Glass-integration) in order to debug monitoring system sensors or check Internet speed. Once all files have been downloaded, the maximum, average and minimum download speeds during operation are displayed.
 
 ![Image alt](https://github.com/Lifailon/Console-Download/blob/rsa/image/example.gif)
 
@@ -30,47 +32,45 @@ You can import a module directly from GitHub into the current PowerShell session
 Invoke-Expression $(Invoke-RestMethod "https://raw.githubusercontent.com/Lifailon/Console-Download/rsa/module/Console-Download/Console-Download.psm1")
 ```
 
-## 📊 Start
+## ⏬ Start
+
+Passing one URL to download one file to default directory (parameter Path: `%USERPROFILE%\Downloads`):
 
 ```PowerShell
-Invoke-Download -Url "https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso" `
-    -Path "C:\Users\Lifailon\Downloads" `
-    -FileName "us-24.04.iso" `
-    -Update 2
+Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip"
 ```
 
-At the end of the download, you will be able to see the summary information:
+Transmit one URL in multi-threaded mode (parallel download of one file a specified number of times):
 
 ```PowerShell
-Url      : https://releases.ubuntu.com/24.04/ubuntu-24.04-live-server-amd64.iso
-FileName : us-24.04.iso
-FilePath : C:\Users\Lifailon\Downloads\us-24.04.iso
-FullSize : 2627 MByte
-DownSize : 2627 MByte
-Time     : 00:01:14
-Minimum  : 0,00 MByte/sec
-Average  : 35,71 MByte/sec
-Maximum  : 49,60 MByte/sec
+Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip" -Thread 3
 ```
 
-**Default parameters:** the path `%USERPROFILE%\Downloads`, file name is taken from the url and data update time 1 seconds.
-
-You can only pass url:
+Download multiple files at once:
 
 ```PowerShell
-Invoke-Download -Url "https://github.com/Lifailon/helperd/releases/download/0.0.1/Helper-Desktop-Setup-0.0.1.exe"
+$urls = @(
+    "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip",
+    "https://github.com/Lifailon/helperd/releases/download/0.0.1/Helper-Desktop-Setup-0.0.1.exe"
+)
+Invoke-Download $urls
 ```
 
+Pass a list of URLs from a file:
+
 ```PowerShell
-Url      : https://github.com/Lifailon/helperd/releases/download/0.0.1/Helper-Desktop-Setup-0.0.1.exe
-FileName : Helper-Desktop-Setup-0.0.1.exe
-FilePath : C:\Users\Lifailon\Downloads\\Helper-Desktop-Setup-0.0.1.exe
-FullSize : 73 MByte
-DownSize : 73 MByte
-Time     : 00:00:22
-Minimum  : 0,40 MByte/sec
-Average  : 3,61 MByte/sec
-Maximum  : 5,80 MByte/sec
+$urls = Get-Content "$home\Desktop\links.txt"
+Invoke-Download $urls
+```
+
+Example result:
+
+```PowerShell
+Thread  : 2
+Time    : 00:00:23
+Minimum : 0,00 MByte/sec
+Average : 8,89 MByte/sec
+Maximum : 51,00 MByte/sec
 ```
 
 ## 📶 Looking Glass Integration
@@ -84,48 +84,13 @@ $urls = Get-LookingGlassList
 You can filter the resulting list by region:
 
 ```PowerShell
-$usaNy = $urls | Where-Object region -like *USA*NY*
+$usaNy = $urls | Where-Object region -like *USA*New*York*
 ```
 
 Sample hosts list for USA NY Region:
 
 ```PowerShell
 $usaNy | Format-List
-
-region    : USA, NY, Brooklyn
-url10mb   : https://104-234-233-47.lg.looking.house/10.mb
-url100mb  : https://104-234-233-47.lg.looking.house/100.mb
-url1000mb : https://104-234-233-47.lg.looking.house/1000.mb
-
-region    : USA, NY, Buffalo, 325 Delaware Ave #302
-url10mb   : https://23-95-182-54.lg.looking.house/10.mb
-url100mb  : https://23-95-182-54.lg.looking.house/100.mb
-url1000mb : https://23-95-182-54.lg.looking.house/1000.mb
-
-region    : USA, NY, Buffalo, 325 Delaware Avenue, Suite 300
-url10mb   : https://199-188-100-133.lg.looking.house/10.mb
-url100mb  : https://199-188-100-133.lg.looking.house/100.mb
-url1000mb : https://199-188-100-133.lg.looking.house/1000.mb
-
-region    : USA, NY, Buffalo, 350 Main St
-url10mb   : https://66-248-241-252.lg.looking.house/10.mb
-url100mb  : https://66-248-241-252.lg.looking.house/100.mb
-url1000mb : https://66-248-241-252.lg.looking.house/1000.mb
-
-region    : USA, NY, Buffalo
-url10mb   : https://23-229-68-119.lg.looking.house/10.mb
-url100mb  : https://23-229-68-119.lg.looking.house/100.mb
-url1000mb : https://23-229-68-119.lg.looking.house/1000.mb
-
-region    : USA, NY, Buffalo
-url10mb   : https://23-229-68-15.lg.looking.house/10.mb
-url100mb  : https://23-229-68-15.lg.looking.house/100.mb
-url1000mb : https://23-229-68-15.lg.looking.house/1000.mb
-
-region    : USA, NY, Garden City, 501 Franklin Ave
-url10mb   : https://185-172-129-7.lg.looking.house/10.mb
-url100mb  : https://185-172-129-7.lg.looking.house/100.mb
-url1000mb : https://185-172-129-7.lg.looking.house/1000.mb
 
 region    : USA, NY, New York
 url10mb   : https://191-96-196-147.lg.looking.house/10.mb
@@ -136,31 +101,36 @@ region    : USA, NY, New-York
 url10mb   : https://5-188-0-17.lg.looking.house/10.mb
 url100mb  : https://5-188-0-17.lg.looking.house/100.mb
 url1000mb : https://5-188-0-17.lg.looking.house/1000.mb
-
-region    : USA, NY, Staten Island, 7 Teleport Dr
-url10mb   : https://144-208-126-12.lg.looking.house/10.mb
-url100mb  : https://144-208-126-12.lg.looking.house/100.mb
-url1000mb : https://144-208-126-12.lg.looking.house/1000.mb
-
-region    : USA, NY, Staten Island, 7 Teleport Dr
-url10mb   : https://172-111-48-4.lg.looking.house/10.mb
-url100mb  : https://172-111-48-4.lg.looking.house/100.mb
-url1000mb : https://172-111-48-4.lg.looking.house/1000.mb
 ```
 
-Select the desired url by size and start download testing:
+Select the desired URL by sequence number (index) and size:
 
 ```PowerShell
-$url1gb = $usaNy[0].url1000mb
-Invoke-Download $url1gb
+$url = $usaNy[0].url100mb
+Write-Host $url
+https://191-96-196-147.lg.looking.house/100.mb
+```
 
-Url      : https://104-234-233-47.lg.looking.house/1000.mb
-FileName : 1000.mb
-FilePath : C:\Users\Lifailon\Downloads\1000.mb
-FullSize : 1000 MByte
-DownSize : 1000 MByte
-Time     : 00:00:45
-Minimum  : 0,10 MByte/sec
-Average  : 22,95 MByte/sec
-Maximum  : 29,70 MByte/sec
+Start testing the download:
+
+```PowerShell
+Invoke-Download $url
+
+Thread  : 1
+Time    : 00:00:10
+Minimum : 0,00 MByte/sec
+Average : 9,90 MByte/sec
+Maximum : 14,20 MByte/sec
+```
+
+Use multiple threads to download one file:
+
+```PowerShell
+Invoke-Download $url -Thread 3
+
+Thread  : 3
+Time    : 00:00:28
+Minimum : 0,00 MByte/sec
+Average : 12,64 MByte/sec
+Maximum : 30,10 MByte/sec
 ```

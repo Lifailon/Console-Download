@@ -1,18 +1,28 @@
 function Invoke-Download {
     <#
     .SYNOPSIS
-    A command line tool for downloading files from a passed URL list in multithreaded mode and displays the download speed in real time.
-    .DESCRIPTION
-    Example:
-    Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip"
-    Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip" -Thread 5
-    $urls = @(
-        "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip",
-        "https://github.com/Lifailon/helperd/releases/download/0.0.1/Helper-Desktop-Setup-0.0.1.exe"
-    )
-    Invoke-Download $urls
+        A command line tool for downloading files from a passed URL list in multithreaded mode and displays the download speed in real time.
+    .PARAMETER Url
+        Accepts one or an array of multiple urls (e.g. from a file)
+    .PARAMETER Thread
+        Accepts the number of threads to upload a single file multiple times from the same url
+    .PARAMETER Path
+        Directory for save files
+    .EXAMPLE
+        Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip"
+    .EXAMPLE
+        Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip" -Thread 3
+    .EXAMPLE
+        $urls = @(
+            "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip",
+            "https://github.com/Lifailon/helperd/releases/download/0.0.1/Helper-Desktop-Setup-0.0.1.exe"
+        )
+        Invoke-Download $urls
+    .EXAMPLE
+        $urls = Get-Content "$home\Desktop\links.txt"
+        Invoke-Download $urls
     .LINK
-    https://github.com/Lifailon/Console-Download
+        https://github.com/Lifailon/Console-Download
     #>
     param (
         [Parameter(Mandatory = $True)][array]$Url,
@@ -22,13 +32,11 @@ function Invoke-Download {
     try {
         $startTime = Get-Date
         $update = 1
-        $report = $true
         $multithread = $false
         # Обрабатываем количество потоков
         if ($($Thread -ne 1) -and $($($Url.Count) -gt 1)) {
-            Write-Warning "NOT"
-            $report = $false
-            break
+            Write-Warning "Unable to process multiple threads if more than one url is passed"
+            $Thread = 1
         }
         if ($($Thread -gt 1) -and $($($Url.Count) -eq 1)) {
             $multithread = $true
@@ -151,37 +159,35 @@ function Invoke-Download {
         } -ThrottleLimit $ThrottleLimit
     }
     finally {
-        if ($report) {
-            $endTime = Get-Date
-            [string]$runTime = $($endTime - $startTime).ToString('hh\:mm\:ss')
-            $metrics = $metrics -replace ",","."
-            $measure = $metrics | Measure-Object -Average -Maximum -Minimum
-            $Collections = New-Object System.Collections.Generic.List[System.Object]
-            $Collections.Add([PSCustomObject]@{
-                Thread    = $Thread
-                Time      = $runTime
-                Minimum   = "$($measure.Minimum.ToString("0.00")) MByte/sec"
-                Average   = "$($measure.Average.ToString("0.00")) MByte/sec"
-                Maximum   = "$($measure.Maximum.ToString("0.00")) MByte/sec"
-            })
-            $Collections
-        }
+        $endTime = Get-Date
+        [string]$runTime = $($endTime - $startTime).ToString('hh\:mm\:ss')
+        $metrics = $metrics -replace ",","."
+        $measure = $metrics | Measure-Object -Average -Maximum -Minimum
+        $Collections = New-Object System.Collections.Generic.List[System.Object]
+        $Collections.Add([PSCustomObject]@{
+            Thread    = $Thread
+            Time      = $runTime
+            Minimum   = "$($measure.Minimum.ToString("0.00")) MByte/sec"
+            Average   = "$($measure.Average.ToString("0.00")) MByte/sec"
+            Maximum   = "$($measure.Maximum.ToString("0.00")) MByte/sec"
+        })
+        $Collections
     }
 }
 
 function Get-LookingGlassList {
     <#
     .SYNOPSIS
-    List of Looking Glass endpoints from Looking.House for download files
-    .DESCRIPTION
-    Example:
-    $urls = Get-LookingGlassList
-    $usaNy = $urls | Where-Object region -like *USA*NY*
-    $url1gb = $usaNy[0].url1000mb
-    Invoke-Download $url1gb
+        List of Looking Glass endpoints from Looking.House for download files.
+    .EXAMPLE
+        $urls = Get-LookingGlassList
+        $usaNy = $urls | Where-Object region -like *USA*New*York*
+        $url = $usaNy[0].url100mb
+        Invoke-Download $url
+        Invoke-Download $url -Thread 3
     .LINK
-    https://github.com/Lifailon/Console-Download
-    https://looking.house
+        https://github.com/Lifailon/Console-Download
+        https://looking.house
     #>
     param (
         [int]$countryCount = 600
