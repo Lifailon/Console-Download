@@ -40,7 +40,7 @@ Passing one URL to download one file to default directory (parameter Path: `%USE
 Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip"
 ```
 
-Transmit one URL in multi-threaded mode (parallel download of one file a specified number of times):
+Parallel downloading in multi-threaded mode of one file (from one URL) a specified number of times (available from 1 to 20):
 
 ```PowerShell
 Invoke-Download -Url "https://github.com/PowerShell/PowerShell/releases/download/v7.4.2/PowerShell-7.4.2-win-x64.zip" -Thread 3
@@ -87,7 +87,7 @@ You can filter the resulting list by region:
 $usaNy = $urls | Where-Object region -like *USA*New*York*
 ```
 
-Sample hosts list for USA NY Region:
+Example host list for the US, New York region:
 
 ```PowerShell
 $usaNy | Format-List
@@ -103,10 +103,11 @@ url100mb  : https://5-188-0-17.lg.looking.house/100.mb
 url1000mb : https://5-188-0-17.lg.looking.house/1000.mb
 ```
 
-Select the desired URL by sequence number (index) and size:
+Select the desired URL by sequence number (index) and size (file size 100 mbyte):
 
 ```PowerShell
 $url = $usaNy[0].url100mb
+
 Write-Host $url
 https://191-96-196-147.lg.looking.house/100.mb
 ```
