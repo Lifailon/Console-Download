@@ -2,6 +2,9 @@ function Invoke-Download {
     <#
     .SYNOPSIS
         A command line tool for downloading files from a passed URL list in multithreaded mode and displays the download speed in real time.
+    .DESCRIPTION
+        This tool is suitable for testing the network interface throughput via Looking Glass hosts in order to debug monitoring system sensors or check Internet speed.
+        Once all files have been downloaded, the maximum, average and minimum download speeds during operation are displayed.
     .PARAMETER Url
         Accepts one or an array of multiple urls (e.g. from a file)
     .PARAMETER Thread
