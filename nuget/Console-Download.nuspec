@@ -2,11 +2,11 @@
 <package >
   <metadata>
     <id>Console-Download</id>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <authors>Lifailon</authors>
     <owners>Lifailon</owners>
-    <description>A command-line tool for downloads a file by the transmitted URL and displays the download speed in real time</description>
-    <tags>PowerShell, Module, SpeedTest, Download, Performance, iPerf, Console</tags>
+    <description>A command line tool for downloading files from a passed URL list in multithreaded mode and displays the download speed in real time</description>
+    <tags>PowerShell, Module, Download, Downloader, SpeedTest, Multithread, Thread, Looking-Glass, iPerf, Performance, Metrics</tags>
     <repository type="git" url="https://github.com/Lifailon/Console-Download" />
     <projectUrl>https://github.com/Lifailon/Console-Download</projectUrl>
     <licenseUrl>https://github.com/Lifailon/Console-Download/blob/rsa/LICENSE</licenseUrl>
