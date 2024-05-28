@@ -34,7 +34,7 @@ function Invoke-Download {
     )
     try {
         $startTime = Get-Date
-        $update = 2
+        $update = 1
         $multithread = $false
         # Обрабатываем количество потоков
         if ($($Thread -ne 1) -and $($($Url.Count) -gt 1)) {
@@ -118,21 +118,27 @@ function Invoke-Download {
                     # Начать загрузку файла в фоновом потоке
                     Start-Job {
                         param (
-                            $currentUrl,
-                            $fullPath
+                            $url,
+                            $path
                         )
                         # Invoke-WebRequest $currentUrl -OutFile $fullPath
                         $httpClient = [System.Net.Http.HttpClient]::new()
-                        $response = $httpClient.GetAsync($currentUrl, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).Result
+                        # Выполнение GET-запроса для загрузки файла (считывая заголовки ответа)
+                        $response = $httpClient.GetAsync($url, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).Result
+                        # Получение потока содержимого из заголовка ответа
                         $stream = $response.Content.ReadAsStreamAsync().Result
-                        $fileStream = [System.IO.File]::OpenWrite($fullPath)
+                        # Открытие файла для записи
+                        $fileStream = [System.IO.File]::OpenWrite($path)
                         try {
+                            # Создание буфера размером 81920 байт (80 КБ) для чтения данных из потока
                             $buffer = New-Object byte[] 81920
+                            # Чтение данных из потока и запись их в файл
                             while (($bytesRead = $stream.Read($buffer, 0, $buffer.Length)) -ne 0) {
                                 $fileStream.Write($buffer, 0, $bytesRead)
                             }
                         }
                         finally {
+                            # Освобождение ресурсов, связанных с потоками
                             $stream.Dispose()
                             $fileStream.Dispose()
                         }
